@@ -110,8 +110,13 @@ asm_network_bc
 	for (size_type bc=0; bc < BC.size(); bc++) {
 
 		size_type i = abs(BC[bc].branches[0]);
-		size_type start = i*mf_u[i].nb_dof();
-		scalar_type Ri = compute_radius(mim, mf_data, R, i);
+		//size_type start = i*mf_u[i].nb_dof(); //this works only if all the branches have the same nb of dofs
+        //relaxing the hp that all the branches have the same nb of dofs
+        size_type start=0;
+        for(size_type kk=0; kk< i; kk++)
+            start+= mf_u[kk].nb_dof();
+           
+                		scalar_type Ri = compute_radius(mim, mf_data, R, i);
 
 		if (BC[bc].label=="DIR") { // Dirichlet BC
 			// Add gv contribution to Fv
@@ -171,15 +176,22 @@ asm_network_junctions
 	GMM_ASSERT1 (getfem::name_of_fem(mf_p.fem_of_element(0)) != "FEM_PK(1,0)" &&
 		getfem::name_of_fem(mf_p.fem_of_element(0)) != "FEM_PK_DISCONTINUOUS(1,0)",
 		"invalid data mesh fem for pressure (k>0 required)");
+    
+    //for debugging I compute the dim J
+    size_type dim_J=0;
+				for(size_type kk=0; kk<mf_u.size(); kk++)
+					dim_J=dim_J+mf_u[kk].nb_dof();
+				
 	
-	for (size_type i=0; i<mf_u.size(); ++i){ /* branch loop */
-
+    size_type shift=0; //counter for the mf_u[i].nb_dof of the branches already examinated
+    
+	for (size_type i=0; i<mf_u.size(); ++i){ /* branch loop */		
 		scalar_type Ri = compute_radius(mim, mf_data, radius, i);
 		//cout << "Region " << i << " : radius=" << Ri << endl;
-
+		
 		for (size_type j=0; j<J_data.size(); ++j){
 
-			// Identify pressure dof corresponding to junction node
+			//Identify pressure dof corresponding to junction node
 			VEC psi(mf_p.nb_dof());
 			asm_basis_function(psi, mim, mf_p, J_data[j].rg);
 			size_type row = 0;
@@ -198,20 +210,29 @@ asm_network_junctions
 			for (getfem::mr_visitor mrv(mf_u[i].linked_mesh().region(i)); !mrv.finished(); ++mrv)
 			for (auto b : mf_u[i].ind_basic_dof_of_element(mrv.cv()))
 				{dof_enum.emplace_back(b);
-				fine++;}			
+				fine++;}	
 			first_=dof_enum[0];
 			last_=dof_enum[fine-1];
 			dof_enum.clear();
-			// Outflow branch contribution
+			//Outflow branch contribution
 			if (std::find(bb, be, i) != be){
-				J(row, i*mf_u[i].nb_dof()+last_) -= pi*Ri*Ri;//col to be generalized!
+                if(shift+last_ >= dim_J)
+                    cout << "EXCEEDING MATRIX DIMENSION: shift+last_ = " << shift+last_ <<" AND DIM J" << dim_J << endl; 
+				J(row, shift+last_) -= pi*Ri*Ri;//col to be generalized!
 			}
-			// Inflow branch contribution
+			//Inflow branch contribution
 			if (i!=0 && std::find(bb, be, -i) != be){
-				J(row, i*mf_u[i].nb_dof()+first_) += pi*Ri*Ri;	//col to be generalized!
+                if(shift+last_ >= dim_J)
+                    cout << "EXCEEDING MATRIX DIMENSION: shift+first_ = " << shift+first_ <<" AND DIM J" << dim_J << endl;
+				J(row, shift+first_) += pi*Ri*Ri;	//col to be generalized!
 			}
-		}
-	}
+			
+		} /* end J loop */
+		
+		shift+=mf_u[i].nb_dof();
+
+	} /* end branch loop */
+
 
 } /* end of asm_junctions */
 
