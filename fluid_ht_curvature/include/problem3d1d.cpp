@@ -2140,7 +2140,13 @@ problem3d1d::export_vtk(const string & suff)
 	size_type start = 0;
 	size_type length = 0;
 	size_type k, last_dof;
-	last_dof=nb_branches*mf_Uvi[nb_branches-1].nb_dof();
+    
+    //This works only if all the branches have the same nb of dof
+	//last_dof=nb_branches*mf_Uvi[nb_branches-1].nb_dof();
+    last_dof=0;
+    for(size_type kk=0; kk<nb_branches; kk++)
+        last_dof+=mf_Uvi[kk].nb_dof();
+    
 		if(PARAM.int_value("ABS_VEL"))
 		{
 		vector_type Uv_abs(dof.Uv());
