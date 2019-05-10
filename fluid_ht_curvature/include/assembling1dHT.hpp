@@ -42,7 +42,6 @@ namespace getfem {
 	@param U	 Velocity Field
 	@param R	 Radius of the vessels
 	@param diff	 Artificial diffusione coefficient
-
 	@ingroup asm
  */ 
 template<typename MAT, typename VEC>
@@ -112,7 +111,6 @@ asm_network_artificial_diffusion
 	@param radius	 Radius of the vessels
 	@param dim	 Characteristic dimension of the problem
 	@param H_old	 Hematocrit along the vessel in previous iteration
-
 	@ingroup asm
  */ 
 template<typename MAT, typename VEC>
@@ -142,9 +140,18 @@ asm_hematocrit_junctions
 		"invalid data mesh fem for pressure (k>0 required)");
 
 	sparse_matrix_type Diameters(gmm::mat_nrows(J),gmm::mat_ncols(J));
-	
+    
+    //counters for the nb of dof of the branches already examinated
+    size_type shift_u=0;
+	size_type shift_h=0;
+    
 	for (size_type i=0; i<mf_h.size(); ++i){ /* branch loop */
-
+        
+        if(i!=0){
+            shift_u+=mf_u[i-1].nb_dof();
+            shift_h+=mf_h[i-1].nb_dof();
+        }
+            
 		scalar_type Ri = compute_radius(mim_u, mf_data_u, radius, i);
 		//cout << "Region " << i << " : radius=" << Ri << endl;
 
@@ -184,13 +191,19 @@ asm_hematocrit_junctions
 			dofu_enum.clear();
 			// Outflow branch contribution
 			if (std::find(bb, be, i) != be){
-				J(row, i*mf_h[i].nb_dof()+last_) -= pi*Ri*Ri*U[i*mf_u[i].nb_dof()+last_u];//col to be generalized!
-				Diameters(row, i*mf_h[i].nb_dof()+last_) += 2*Ri*dim;
-			}
+                //this works only if mf_u[i].nb_dof is equal for all i 
+				//J(row, i*mf_h[i].nb_dof()+last_) -= pi*Ri*Ri*U[i*mf_u[i].nb_dof()+last_u];//col to be generalized!
+				J(row, shift_h+last_) -= pi*Ri*Ri*U[shift_u+last_u];//col to be generalized!
+                //Diameters(row, i*mf_h[i].nb_dof()+last_) += 2*Ri*dim;
+                Diameters(row, shift_h+last_) += 2*Ri*dim;
+                
+            }
 			// Inflow branch contribution
 			if (i!=0 && std::find(bb, be, -i) != be){
-				J(row, i*mf_h[i].nb_dof()+first_) += pi*Ri*Ri*U[i*mf_u[i].nb_dof()+first_u];//col to be generalized!
-				Diameters(row, i*mf_h[i].nb_dof()+first_) += 2*Ri*dim;
+				//J(row, i*mf_h[i].nb_dof()+first_) += pi*Ri*Ri*U[i*mf_u[i].nb_dof()+first_u];//col to be generalized!
+				//Diameters(row, i*mf_h[i].nb_dof()+first_) += 2*Ri*dim;
+                J(row, shift_h+first_) += pi*Ri*Ri*U[shift_u+first_u];//col to be generalized!
+				Diameters(row, shift_h+first_) += 2*Ri*dim;
 			}
 		}
 	}
@@ -348,11 +361,11 @@ asm_HT_out
 	 const mesh_fem & mf_data_u
 	) 
 {
-size_type shift=0;
+size_type shift_h=0;
 size_type shift_u=0;
 for (size_type i=0; i < mf_h.size(); i++) { 
 			if(i!=0){
-			shift = shift+mf_h[i-1].nb_dof();
+			shift_h = shift_h+mf_h[i-1].nb_dof();
 			shift_u=shift_u+mf_u[i-1].nb_dof();
 			}
 
@@ -375,10 +388,14 @@ for (size_type i=0; i < mf_h.size(); i++) {
 			size_type first_u=dofu_enum[0];
 			size_type first=dof_enum[0];
 
-		if (U[i*mf_u[i].nb_dof()+last_u]>0)
-	M[i*mf_h[i].nb_dof()+last][i*mf_h[i].nb_dof()+last]+=pi*Ri*Ri*U[i*mf_u[i].nb_dof()+last_u];	else
-	M[i*mf_h[i].nb_dof()+first][i*mf_h[i].nb_dof()+first]-=pi*Ri*Ri*U[i*mf_u[i].nb_dof()+first_u];
+// 		if (U[i*mf_u[i].nb_dof()+last_u]>0)
+// 	M[i*mf_h[i].nb_dof()+last][i*mf_h[i].nb_dof()+last]+=pi*Ri*Ri*U[i*mf_u[i].nb_dof()+last_u];	else
+// 	M[i*mf_h[i].nb_dof()+first][i*mf_h[i].nb_dof()+first]-=pi*Ri*Ri*U[i*mf_u[i].nb_dof()+first_u];
 
+        if (U[shift_u+last_u]>0)
+ 	M[shift_h+last][shift_h+last]+=pi*Ri*Ri*U[shift_u+last_u];	else
+ 	M[shift_h+first][shift_h+first]-=pi*Ri*Ri*U[shift_u+first_u];
+            
 	} /*end of for cicle*/
 
 }/* end of asm_HT_out*/
@@ -392,7 +409,6 @@ for (size_type i=0; i < mf_h.size(); i++) {
 	@param mf_data   The finite element method for the tangent versor on @f$ \Lambda @f$
 	@param coef      The coefficient for M
 	@param rg        The region where to integrate
-
 	@ingroup asm
  */ 
 template<typename MAT, typename VEC>
