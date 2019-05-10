@@ -41,7 +41,7 @@ PRINT_RESIDUALS       = 1;
 % Flag to choose Lymphatic Drainage Curve (0 = sigmoid; 1= linear)
 LINEAR_LYMPHATIC_DRAINAGE = 1;
 % Flag to study the hematocrit distribution all over the network (0 = constant; 1= transport)
-HEMATOCRIT_TRANSPORT = 1;
+HEMATOCRIT_TRANSPORT = 0;
 %===================================
 %  MESH
 %===================================
@@ -49,8 +49,10 @@ HEMATOCRIT_TRANSPORT = 1;
 TEST_GEOMETRY = 1;
 GT_T       = 'GT_PK(3,1)';
 NSUBDIV_T  = '[11,11,11]';
-ORG_T      = '[35.32185485,244.57499695,182.7330437]';
-SIZES_T    = '[92.63965485,73.18229675,60.0558052]';
+ORG_T      = '[-57.3178, 171.3927002, 122.6772385]';
+SIZES_T    = '[185.2793097, 146.3645935, 120.1116104]';
+%ORG_T      = '[35.32185485,244.57499695,182.7330437]';
+%SIZES_T    = '[92.63965485,73.18229675,60.0558052]';
 %ORG_T      = '[0,0,0]';
 %SIZES_T    = '[1,1,1]';
 NOISED_T   = '0';
