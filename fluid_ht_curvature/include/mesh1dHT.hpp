@@ -90,9 +90,15 @@ import_pts_file_HT(
 		"This seems not to be a data file");
 
 	size_type globalBoundaries = 0;
+    
+    //generalizing to branches with different nb of dof
+    size_type shift=0;
 
 	while (bgeot::read_until(ist, "BEGIN_ARC")) {
-	
+        
+        if(Nb!=0)
+            shift +=mf_u[Nb-1].nb_dof();
+        
 		Nb++;
 		Nn.emplace_back(0);
 
@@ -131,10 +137,13 @@ import_pts_file_HT(
 					bgeot::get_token(ist, value, 1023);
 						N_bc++;
 					if (bcflag ==1)
-					uvi=U[(Nb-1)*mf_u[Nb-1].nb_dof()+first_u];
+                    //this works only if mf_u[i].nb_dof() is the same for all i
+					//uvi=U[(Nb-1)*mf_u[Nb-1].nb_dof()+first_u];
+                    uvi=U[shift+first_u];    
 					else
-					uvi=U[(Nb-1)*mf_u[Nb-1].nb_dof()+last_u];
-					if (bcflag == 1 && uvi >0) {
+                    //uvi=U[(Nb-1)*mf_u[Nb-1].nb_dof()+last_u];
+					uvi=U[shift+last_u];
+                    if (bcflag == 1 && uvi >0) {
 						BCA.label = BCtype; 
 						BCA.value = stof(value); 
 					}
@@ -156,10 +165,12 @@ import_pts_file_HT(
 				}
 				else if (BCtype.compare("MIX") == 0) {
 					bgeot::get_token(ist, value, 1023);
-										if (bcflag ==1)
-					uvi=U[(Nb-1)*mf_u[Nb-1].nb_dof()+last_u];
+					if (bcflag ==1)
+					//uvi=U[(Nb-1)*mf_u[Nb-1].nb_dof()+last_u];
+                    uvi=U[shift+last_u];
 					else
-					uvi=U[(Nb-1)*mf_u[Nb-1].nb_dof()+first_u];
+					//uvi=U[(Nb-1)*mf_u[Nb-1].nb_dof()+first_u];
+                    uvi=U[shift+last_u];
 					if (bcflag == 1 && uvi >0) {
 						BCA.label = BCtype; 
 						BCA.value = stof(value); 
