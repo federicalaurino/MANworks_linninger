@@ -119,10 +119,36 @@ asm_network_bc
                 		scalar_type Ri = compute_radius(mim, mf_data, R, i);
 
 		if (BC[bc].label=="DIR") { // Dirichlet BC
+            /*
+            //impose BC with penalty method
+            VEC BC_temp(mf_u[i].nb_dof(), BC[bc].value);
+            MAT MMi(mf_u[i].nb_dof(), mf_u[i].nb_dof());
+            VEC FFi(mf_u[i].nb_dof());
+			getfem::asm_dirichlet_constraints(MMi, FFi, mim, mf_u[i], mf_u[i], mf_u[i], BC_temp,mf_u[i].linked_mesh().region(BC[bc].rg)); 
+
+                        // std::cout<<"F  bef" << F  << std::endl; std::cin.get(); 
+			//getfem::assembling_Dirichlet_condition(MMi, FFi, mf_u[i], BC[bc].rg, BC_temp);
+                        
+
+                         // std::cout<<"F  after" << F  << std::endl; std::cin.get(); 
+			 double penalty =1.e9;    
+                        // std::cout<<       mf_c.basic_dof_on_region(BC[bc].rg).first()<< std::endl;           
+                        // std::cout<<       mf_c.basic_dof_on_region(BC[bc].rg) << std::endl; std::cin.get();
+			FFi[mf_u[i].basic_dof_on_region(BC[bc].rg).first()]= BC[bc].value*pi*Ri*Ri*penalty;
+            MMi(mf_u[i].basic_dof_on_region(BC[bc].rg).first(),mf_u[i].basic_dof_on_region(BC[bc].rg).first())=penalty;
+            gmm::add(FFi,gmm::sub_vector(F,gmm::sub_interval(start,mf_u[i].nb_dof())));
+            gmm::add(MMi,gmm::sub_matrix(M,
+					gmm::sub_interval(start, mf_u[i].nb_dof()),
+					gmm::sub_interval(start, mf_u[i].nb_dof())));
+			gmm::clear(MMi);
+            gmm::clear(FFi);
+            gmm::clear(BC_temp); 
+            */
+            
 			// Add gv contribution to Fv
-			scalar_type BCVal = BC[bc].value*pi*Ri*Ri;
-			getfem::asm_source_term(gmm::sub_vector(F, gmm::sub_interval(start,mf_u[i].nb_dof())), 
-				mim, mf_u[i], mf_data, gmm::scaled(ones, BCVal), BC[bc].rg);
+ 			scalar_type BCVal = BC[bc].value*pi*Ri*Ri;
+ 			getfem::asm_source_term(gmm::sub_vector(F, gmm::sub_interval(start,mf_u[i].nb_dof())), 
+ 				mim, mf_u[i], mf_data, gmm::scaled(ones, BCVal), BC[bc].rg);
 		} 
 		else if (BC[bc].label=="MIX") { // Robin BC
 			// Add correction to Mvv

@@ -1,4 +1,4 @@
-/* -*- c++ -*- (enableMbars emacs c++ mode) */
+    /* -*- c++ -*- (enableMbars emacs c++ mode) */
 /*======================================================================
     "Mixed Finite Element Methods for Coupled 3D/1D Fluid Problems"
         Course on Advanced Programming for Scientific Computing
@@ -82,6 +82,9 @@ double sol_gt(const bgeot::base_node & x){
 	return 4.0*pi*pi*kappat*(1.0/(Lx*Lx)+1.0/(Ly*Ly)+1.0/(Lz*Lz))*sin(2.0*pi/Lx*x[0])*sin(2.0*pi/Ly*x[1])*sin(2.0*pi/Lz*x[2]);
 }
 
+ double x_coordinate(const bgeot::base_node & x){
+	return x[0];
+    }
 
 /////////// Initialize the problem ///////////////////////////////////// 
 void 
@@ -369,7 +372,7 @@ try {
 				contained = meshv.region(branch).is_in(cv);
 				if (!contained) branch++;
 			}
-			GMM_ASSERT1(contained=true, "No branch region contains node i0!");
+			GMM_ASSERT1(contained==true, "No branch region contains node i0!");
 			BCv[bc].branches.emplace_back(branch); 
 		}
 		else if (meshv.convex_to_point(i0).size()==2){ /* trivial inflow junction */
@@ -398,7 +401,7 @@ try {
 				contained = meshv.region(branch).is_in(cv);
 				if (!contained) branch++;
 			}
-			GMM_ASSERT1(contained=true, "No branch region contains node i0!");
+			GMM_ASSERT1(contained==true, "No branch region contains node i0!");
 			// Add the inflow branch (to the right junction node)
 			size_type jj = 0;
 			bool found = false;
@@ -409,8 +412,9 @@ try {
 			//cout << "Branch -" << branch << " added to junction " << jj << endl;
 			Jv[jj].value += param.R(mimv, branch);
 			Jv[jj].branches.emplace_back(-branch);
-			GMM_ASSERT1(branch>0, 
-				"Error in network labeling: -0 makes no sense");
+// // //             //this does not work if in the branch 0 I have a non trivial junction
+			//GMM_ASSERT1(branch>0, 
+			//	"Error in network labeling: -0 makes no sense");
 		}
 		
 		if (meshv.convex_to_point(i1).size()==1){ 
@@ -438,7 +442,7 @@ try {
 					contained = meshv.region(branch).is_in(cv);
 					if (!contained) branch++;
 				}
-				GMM_ASSERT1(contained=true, "No branch region contains node i1!");
+				GMM_ASSERT1(contained==true, "No branch region contains node i1!");
 				BCv[bc].branches.emplace_back(branch); 
 			}
 			else { /* interior -> Mixed point */
@@ -456,7 +460,7 @@ try {
 					contained = meshv.region(branch).is_in(cv);
 					if (!contained) branch++;
 				}
-				GMM_ASSERT1(contained=true, "No branch region contains node i1!");
+				GMM_ASSERT1(contained==true, "No branch region contains node i1!");
 				BCv.back().branches.emplace_back(branch); 
 			}
 		}
@@ -469,7 +473,7 @@ try {
 				contained = meshv.region(firstbranch).is_in(cv);
 				if (!contained) firstbranch++;
 			}
-			GMM_ASSERT1(contained=true, "No branch region contains node i1!");
+			GMM_ASSERT1(contained==true, "No branch region contains node i1!");
 
 			// Check if i1 is a trivial junction (or a INT point)
 			size_type cv1 = meshv.convex_to_point(i1)[0];
@@ -503,7 +507,7 @@ try {
 					contained = meshv.region(secondbranch).is_in(secondcv);
 					if (!contained) secondbranch++;
 				}
-				GMM_ASSERT1(contained=true, "No branch region contains node i1!");
+				GMM_ASSERT1(contained==true, "No branch region contains node i1!");
 				// Add the two branches
 				scalar_type in;
 				in=0;
@@ -522,7 +526,7 @@ try {
 				}
 			}
 		}
-		else if (meshv.convex_to_point(i1).size()>=2){ /* non-trivial outflow junction */
+		else if (meshv.convex_to_point(i1).size()>2){ /* non-trivial outflow junction */
 
 			// Search for index of containing branch (\mathcal{P}^{out}_j)
 			size_type branch = 0; 
@@ -531,7 +535,7 @@ try {
 				contained = meshv.region(branch).is_in(cv);
 				if (!contained) branch++;
 			}
-			GMM_ASSERT1(contained=true, "No branch region contains node i0!");
+			GMM_ASSERT1(contained==true, "No branch region contains node i0!");
 
 			// Check if jucntion has been already stored, 
 			// if not add to the junction list (J) and build a new region
@@ -991,6 +995,8 @@ problem3d1d::solve(void)
                 #ifdef M3D1D_VERBOSE_ 
                 cout << "  Condition number : " << cond << endl;
 		#endif
+                
+        
 	}
 	else { // Iterative solver //
 
@@ -2018,7 +2024,7 @@ problem3d1d::export_vtk(const string & suff)
 		Pt_LF[i]=(Pt_LF[i]+D)/C;
 		QLF[i]=(A-B/(1+pow(2.71828,Pt_LF[i])));
 		}
-}
+    }
 	else
 	{       
         vector_type Pl(dof.Pt(),PARAM.real_value("PL"));
@@ -2190,6 +2196,35 @@ problem3d1d::export_vtk(const string & suff)
 	#ifdef M3D1D_VERBOSE_
 	cout << "... export done, visualize the data file with (for example) Paraview " << endl; 
 	#endif
+    
+    
+    #ifdef M3D1D_VERBOSE_
+	cout << "  -----------------Federica:Trying to export a function defined on Pv mesh  ..." << endl;
+	#endif
+    //returns the x coordinate of a point of the mesh
+    vector_type XX(mf_Pv.nb_dof());
+	interpolation_function(mf_Pv, XX, x_coordinate);
+    vtk_export exp_XX(descr.OUTPUT+"XX"+suff+".vtk");
+	exp_XX.exporting(mf_Pv);
+	exp_XX.write_mesh();
+	exp_XX.write_point_data(mf_Pv, XX, "XX");
+    
+    //returns the bcs
+    vector_type YY(mf_Pv.nb_dof());
+    vector_type tmp(mf_Pv.nb_dof());
+    std::vector<scalar_type> ones(mf_Pv.nb_dof(), 1.0);
+    for(size_type kk=0; kk<BCv.size(); kk++){
+        gmm::clear(tmp);
+        cout <<"BC = " << BCv[kk].value << endl;
+        getfem::asm_source_term(tmp, 
+				mimv, mf_Pv, mf_Pv, gmm::scaled(ones, BCv[kk].value), BCv[kk].rg);
+        gmm::add(tmp,YY);
+    }
+    vtk_export exp_YY(descr.OUTPUT+"YY"+suff+".vtk");
+	exp_YY.exporting(mf_Pv);
+	exp_YY.write_mesh();
+	exp_YY.write_point_data(mf_Pv, YY, "YY");
+    
   }
 
 } /* end of export_vtk */
